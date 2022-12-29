@@ -1,10 +1,5 @@
-# SPDX-FileCopyrightText: Copyright (c) 2021 Kattni Rembor for Adafruit Industries
-#
-# SPDX-License-Identifier: Unlicense
 """
-Simpletest demo for MacroPad. Displays the key pressed, the relative position of the rotary
-encoder, and the state of the rotary encoder switch to the built-in display. Note that the key
-pressed line does not appear until a key is pressed.
+Simple game to press all the keys on the MacroPad
 """
 from adafruit_macropad import MacroPad
 import random
