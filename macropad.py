@@ -2,18 +2,18 @@
 Simple game to press all the keys on the MacroPad
 """
 from adafruit_macropad import MacroPad
-import random
+import random, time
 
 #
 RAW_COLORS = [
-    "WHITE",
-    (255, 255, 255),
     "RED",
     (255, 0, 0),
-    "GREEN",
-    (0, 255, 0),
     "BLUE",
     (0, 32, 255),
+    "GREEN",
+    (0, 255, 0),
+    "WHITE",
+    (255, 255, 255),
     "YELLOW",
     (255, 200, 0),
     "PINK",
@@ -22,6 +22,8 @@ RAW_COLORS = [
     (255, 64, 0),
     "PURPLE",
     (64, 0, 255),
+    "TEAL", #This is actually "CYAN" but kids know TEAL more
+    (0,255,255),
 ]
 
 COLOR_NAMES = RAW_COLORS[::2]
@@ -38,14 +40,30 @@ text_lines = macropad.display_text(text_scale=3)  # title="MacroPad Info")
 Display = ""
 KeyColor = [None for i in range(12)]
 KeyState = [None for i in range(12)]
+TargetColor = None
+Volume = 0
+Level = 1
 
-
-def initialize():
-    global KeyColor, KeyState, Display
+def initialize(n_colors = N_COLORS):
+    global KeyColor, KeyState, Display, TargetColor
     Display = ""
-    KeyColor = [random.randrange(N_COLORS) for i in range(12)]
+    cols = [i % n_colors for i in range(12)]
+    print(cols)
+    
+    #KeyColor = [random.randrange(n_colors) for i in range(12)]
+    
+    #Deals out random colors in such a way that the number of each color is as balanced as possible
+    available_colors = list(range(n_colors))
+    for i in range(12):
+        KeyColor[i] = random.choice(available_colors)
+        available_colors.remove(KeyColor[i])
+        if not available_colors:
+            available_colors = list(range(n_colors))
+    
+    
     KeyState = [True for i in range(12)]
-
+    TargetColor = random.choice(KeyColor)
+    Display = COLOR_NAMES[TargetColor]
 
 def update():
     text_lines[0].text = Display
@@ -55,34 +73,56 @@ def update():
             macropad.pixels[i] = COLORS[KeyColor[i]]
         else:
             macropad.pixels[i] = (0, 0, 0)
+            
 
 
-def play_happy():
-    for i in range(4):
-        macropad.play_tone(300 + 150 * i, 0.25)
 
+def play_happy(n_tones = 4):
+    macropad.display_image("happy_turtle.bmp")
+    if Volume > 0 :
+        for i in range(n_tones):
+            macropad.play_tone(300 + 150 * i, 0.25)
+    else:
+        time.sleep(2)
+    
 
-log2_brightness = -5  # macropad.encoder - 2
-macropad.pixels.brightness = 2 ** log2_brightness
 # text_lines[2].text = "Encoder switch: {}".format(macropad.encoder_switch)
 
 
-initialize()
+initialize(Level)
 update()
 while True:
+    
+    #Allows us to use the rotary encoder to set the led brightness
+    Log2Brightness = max(-6,macropad.encoder - 4)
+    macropad.pixels.brightness = 2 ** Log2Brightness
+
     key_event = macropad.keys.events.get()
+    
     if key_event and key_event.pressed:
         n = key_event.key_number
 
         # Toggle KeyState and set display to the key color
-        KeyState[n] = not (KeyState[n])
-        Display = COLOR_NAMES[KeyColor[n]]
-
+        if KeyColor[n] == TargetColor:
+            KeyState[n] = not (KeyState[n])
+        
+        
         # Update all the keys
         update()
-
-        # If all keys are out, then restart the game
-        if not any(KeyState):
-            play_happy()
-            initialize()
+        
+        #Check if we have eliminates all of the target color
+        CurrentColors = [KeyColor[i] for i in range(12) if KeyState[i]==True ]
+        
+        
+        if not any(KeyState): # If all keys are out, then restart the game
+            play_happy(4)
+            Level = min(Level+1,N_COLORS)
+            initialize(Level)
             update()
+        elif not( TargetColor in CurrentColors ): #if we have eliminated all of TargetColor
+            play_happy(2)
+            TargetColor = random.choice(CurrentColors)
+            Display = COLOR_NAMES[TargetColor]
+            update()
+
+
