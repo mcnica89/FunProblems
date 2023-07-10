@@ -37,6 +37,7 @@ COLOR_NAMES = RAW_COLORS[::2]
 COLORS = RAW_COLORS[1::2]
 N_COLORS = len(COLORS)
 #
+MUSIC_SCALE = [262, 294, 330, 350, 392, 440, 494, 523, 587, 659, 698, 784] #frequencies for a scale
 
 ############################################
 ## Important Global Variables
@@ -63,7 +64,7 @@ Volume = 0 #global volume for the game
 
 class Settings_Game:
     #This game allows you to change the pixel brightness and set volume on 
-    Name = "SETTING"
+    Name = "SET UP"
     def __init__(self):
         global MacroPadTextLines, Display, KeyState, KeyColor
         #Set the title and font size
@@ -234,6 +235,69 @@ class Math_Game:
             self.__init__() #restart the game!
             MacroPadUpdate()
 
+class Memory_Game:
+    #Classic memory game but with "hints"
+    Name = "MEMORY"
+    
+    #Play a sound and light up the key 
+    def play_key(k,sound_len=0.25,pause_len=0.1):
+        MacroPad.pixels[k] = COLORS[k % N_COLORS]
+        MacroPadTone(MUSIC_SCALE[k], sound_len)
+        MacroPad.pixels[k] = (0,0,0)
+        time.sleep(pause_len)
+    
+    #Add a random key to the memory sequence
+    def make_random():
+        return random.randrange(0,9)
+    
+    #Play the whole sequence
+    def play_mem_seq(self,sound_len=0.25,pause_len=0.1):
+        for k in self.mem_seq:
+            Memory_Game.play_key(k,sound_len,pause_len)
+        
+    def __init__(self):
+        global MacroPadTextLines, KeyColor, KeyState, Display
+        MacroPadTextLines = MacroPad.display_text(title="Hints:",title_scale=2,text_scale=2,title_length=8) #set the textscale for the game
+        
+        #initialize with one key
+        self.mem_seq = [Memory_Game.make_random()] #initialize memory sequence to one number
+        self.mem_seq_remaining = self.mem_seq.copy() #what is remaining to be pressed in the sequence
+        
+        Display = "".join([str(KEYMAP[x]) for x in self.mem_seq]) #convert list to ints and join it
+        MacroPadUpdate()
+        self.play_mem_seq()
+        
+    def key_pressed(self, KeyPressedIx):
+        global Display, KeyState
+        Memory_Game.play_key(KeyPressedIx)
+            
+        if KeyPressedIx == self.mem_seq_remaining[0]: #if its correct
+            self.mem_seq_remaining.pop(0) #remove from remaning list
+        
+            if not self.mem_seq_remaining: #check if its empty! if so next round!
+                MacroPadHappy(2) 
+                if len(self.mem_seq) > 9: #if length is >9, then restart at 1
+                    MacroPadHappy(4)
+                    self.mem_seq = []
+                    
+                self.mem_seq.append(Memory_Game.make_random()) #add another element
+                Display = "".join([str(KEYMAP[x]) for x in self.mem_seq]) #set display
+                MacroPadUpdate()
+                self.mem_seq_remaining = self.mem_seq.copy()
+                self.play_mem_seq()
+                
+        else: #if incorrect!
+            MacroPadSad(2)
+            self.mem_seq_remaining = self.mem_seq.copy() #start with nothing
+            self.play_mem_seq() #replay the sequence
+            
+        
+    def encoder_turned(self,_,__):
+        self.play_mem_seq()
+   
+    
+    
+    
 
 #Function that updates the actual colors using the global variables
 def MacroPadUpdate():
@@ -258,13 +322,19 @@ def MacroPadHappy(n_tones = 4):
     for i in range(n_tones):
         MacroPadTone(300 + 150 * i, 0.25)
    
+#Play a happy tone and show a picture of a turtle
+def MacroPadSad(n_tones = 4):
+    #MacroPad.display_image("happy_turtle.bmp")
+    for i in range(n_tones):
+        MacroPadTone(400 - 150 * i, 0.25)
+   
 #################
 ## Main loop code
 #################
 
 #List of all the games, this is how the menu works
-AllGames = [Settings_Game, Math_Game, Art_Game, Find_Colors_Game]
-MenuChoiceIx = 1
+AllGames = [Memory_Game, Settings_Game, Math_Game, Art_Game, Find_Colors_Game]
+MenuChoiceIx = 0
 
 #Encoder positions stored so we can compare to them
 LastEncoder = MacroPad.encoder
