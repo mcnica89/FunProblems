@@ -296,7 +296,25 @@ class Memory_Game:
         self.play_mem_seq()
    
     
-    
+class Off_Game:
+    # "Turns off" the macropad by putting it into an infinite loop 
+    Name = "OFF"
+    def __init__(self):
+        global MacroPadTextLines, KeyColor, KeyState, Display
+        MacroPadTextLines = MacroPad.display_text(text_scale=3) #set the textscale for the game
+        Display = "BYE BYE"
+        MacroPadUpdate()
+        time.sleep(2)
+        Display = ""
+        MacroPadUpdate()
+        self.is_on = False
+
+    def encoder_turned(self,_,__):
+        pass
+        
+    def key_pressed(self,KeyPressedIx):
+        pass 
+        
     
 
 #Function that updates the actual colors using the global variables
@@ -310,11 +328,11 @@ def MacroPadUpdate():
             MacroPad.pixels[i] = (0, 0, 0)
 
 #Play a tone (but check volume first!)
-def MacroPadTone(freq_hz,time_ms):
+def MacroPadTone(freq_hz,time_s):
     if Volume > 0:
-        MacroPad.play_tone(freq_hz, time_ms)
+        MacroPad.play_tone(freq_hz, time_s)
     else:
-        time.sleep(time_ms)
+        time.sleep(time_s)
 
 #Play a happy tone and show a picture of a turtle
 def MacroPadHappy(n_tones = 4):
@@ -333,7 +351,7 @@ def MacroPadSad(n_tones = 4):
 #################
 
 #List of all the games, this is how the menu works
-AllGames = [Memory_Game, Settings_Game, Math_Game, Art_Game, Find_Colors_Game]
+AllGames = [Memory_Game, Settings_Game, Math_Game, Art_Game, Find_Colors_Game, Off_Game]
 MenuChoiceIx = 0
 
 #Encoder positions stored so we can compare to them
@@ -380,6 +398,7 @@ while True:
         MacroPad.encoder_switch_debounced.update() #check for encoder pressed to go to playing game
         if MacroPad.encoder_switch_debounced.pressed: 
             break
+        
         
     
     
