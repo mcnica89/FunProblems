@@ -180,7 +180,7 @@ class Count_Game:
     Name = "COUNT"
     def __init__(self, my_num_range = 1):
         global MacroPadTextLines, KeyColor, KeyState, Display
-        MacroPadTextLines = MacroPad.display_text(text_scale=4) #set the textscale for the game
+        MacroPadTextLines = MacroPad.display_text(title="How many?",title_scale=2,text_scale=3) #set the textscale for the game
 
         self.level = int(my_num_range) #the level sets the size of the possible random numbers
         # this makes it so we start with "easier" to count numbers before going larger
@@ -196,8 +196,10 @@ class Count_Game:
             self.available_keys.remove(key_to_turn_on)
             KeyState[key_to_turn_on] = True
 
-        random_key_color = random.randrange(N_COLORS)
-        KeyColor = [random_key_color]*12
+        self.target_color = random.randrange(N_COLORS)
+        KeyColor = [self.target_color]*12
+
+        Display = COLOR_NAMES[self.target_color]
         MacroPadUpdate()
 
     def encoder_turned(self,EncoderState,EncoderDiff):
