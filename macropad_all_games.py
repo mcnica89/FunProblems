@@ -45,7 +45,7 @@ MUSIC_SCALE = [262, 294, 330, 350, 392, 440, 494, 523, 587, 659, 698, 784] #freq
 # The games works by modifying these global variables
 
 MacroPad = MacroPad()
-MacroPad.pixels.brightness = 0.1 #default brightness..can be changed in settings menu
+MacroPad.pixels.brightness = 0.1 #default brightness..can be changed in "settings menu" game
 # See https://docs.circuitpython.org/projects/macropad/en/latest/api.html#adafruit_MacroPad.MacroPad.pixels
 # for how to use the MacroPad package.
 
@@ -185,19 +185,25 @@ class Count_Game:
         self.level = int(my_num_range) #the level sets the size of the possible random numbers
         # this makes it so we start with "easier" to count numbers before going larger
         min_num = max(1,3-self.level)
-        max_num = min(10,3+self.level)
+        max_num = min(9,3+self.level)
         self.count_to = random.randint(min_num,max_num) #choose a random number to count to
 
-        KeyState = [False for i in range(12)]
+        KeyState = [True for i in range(12)]
+        KeyColor = [3]*12  #set all to white
+        #self.target_color = 3
+        #while self.target_color != 3: #choose a random non-white color here
+        #    self.target_color = random.randrange(N_COLORS)
 
+        non_white_colors = list(range(N_COLORS))
+        non_white_colors.remove(3)
+        self.target_color = random.choice(non_white_colors) #choose a random non-white color
+
+        #loop to sample which keys to turn on (random.sample is not implemented in circuitpython)
         self.available_keys = list(range(12))
         for i in range(self.count_to): #turn on self.count_to random keys
             key_to_turn_on = random.choice(self.available_keys)
             self.available_keys.remove(key_to_turn_on)
-            KeyState[key_to_turn_on] = True
-
-        self.target_color = random.randrange(N_COLORS)
-        KeyColor = [self.target_color]*12
+            KeyColor[key_to_turn_on] = self.target_color
 
         Display = COLOR_NAMES[self.target_color]
         MacroPadUpdate()
@@ -347,6 +353,8 @@ class Off_Game:
         time.sleep(2)
         Display = ""
         MacroPadUpdate()
+
+        MacroPad.red_led = False
         self.is_on = False
 
     def encoder_turned(self,_,__):
@@ -398,6 +406,13 @@ MenuChoiceIx = 0
 LastEncoder = MacroPad.encoder
 FirstEncoder = MacroPad.encoder
 
+
+#this is used to flash the lights periodically in order to keep the battery from turning off automatically
+#LightFlashLastTime = time.monotonic()
+#LightFlashIntervalSec = 20 #number of seconds between light flashes
+
+MacroPad.red_led = True
+
 #Main loop
 while True:
     #### GAME MODE ####
@@ -419,6 +434,20 @@ while True:
         if LastEncoder != MacroPad.encoder:
             Game.encoder_turned(MacroPad.encoder - FirstEncoder, MacroPad.encoder - LastEncoder)
             LastEncoder = MacroPad.encoder
+
+        #this loop manual flashes all th elights every few seconds to keep the battery from turnin off
+        #if time.monotonic() - LightFlashLastTime > LightFlashIntervalSec and MacroPad.red_led == True: #if still on do this!
+        #    old_brightness = MacroPad.pixels.brightness
+        #    MacroPad.pixels.brightness = 1.0
+        #    for i in range(12):
+        #        MacroPad.pixels[i] = (255, 255, 255)
+        #    time.sleep(0.01)
+        #    MacroPad.pixels.brightness = old_brightness
+        #    MacroPadUpdate() #reset everything
+        #    LightFlashLastTime = time.monotonic()
+
+
+
 
     #### MENU MODE #####
     MacroPadTextLines = MacroPad.display_text(title="Menu:",title_scale=2,text_scale=3,title_length=8)
