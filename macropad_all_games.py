@@ -4,6 +4,53 @@ Games for a toddler on the MacroPad
 from adafruit_MacroPad import MacroPad
 import random, time
 
+import board
+import displayio
+import adafruit_imageload
+
+import terminalio
+from adafruit_display_text import label
+
+BoardDisplay = board.DISPLAY
+SpriteGroup = displayio.Group()
+SpriteFlag = False #whether or not to show the sprite
+
+###########################################
+## Gloabl sprites used for the Word game
+###########################################
+#sprite sheet with all the emojis
+Sprite_Sheet, Palette = adafruit_imageload.load("spritesheet_4.bmp",
+                    bitmap=displayio.Bitmap,
+                    palette=displayio.Palette)
+
+EMOJI_WORDS = ["EGG","HOUSE","ROAD","MOON","HELICOPTER","TENT","GONDOLA","MILK","DOLPHIN","SQUIRREL","JEEP","APPLE","CARROT",
+                "PLANE","DUCK","CHEESE","PIG","CAT","OCTOPUS","BANANAS","ROBOT","TURTLE","CAR","BEAVER","TRAIN","SUN","TRACTOR",
+                "SNAIL","HAT","BIKE","POLICE","FISH","COW","FROG","CRAB","OWL"]
+N_Emojis = len(EMOJI_WORDS)
+print(N_Emojis)
+
+# Create the sprite TileGrid
+# this is an array of size 3 with the 3 symbols to show
+Sprite = displayio.TileGrid(Sprite_Sheet, pixel_shader=Palette,
+                    width = 3, #make it a 3x1 array
+                    height = 1,
+                    tile_width = 42, #width/height in pixels on the spritesheet
+                    tile_height = 42,
+                    default_tile = 0)
+
+Sprite.y = 23 #set the y coordinate to be just below the text
+
+#SpriteGroup = displayio.Group() #this group contains everything to display
+SpriteGroup.append(Sprite)
+
+
+max_word_len = max([len(word) for word in EMOJI_WORDS])
+SpriteText = label.Label(terminalio.FONT, text='-'*max_word_len, color=0xFFFFFF,scale=2) #add in the text S
+SpriteText.anchor_point = (0.5, 0.0) #set the anchor to the top-middle of the text so it can be centered
+SpriteText.anchored_position = (64, -6) #place the text in the top-middle of the screen
+SpriteGroup.append(SpriteText) #add it to the displaygroup
+
+
 
 ###########################################
 ## Constants used for the games
@@ -61,6 +108,72 @@ Volume = 0 #global volume for the game
 ## Each game is a class that has an __init__, a key_pressed, and a encoder_turned function
 ## Each game also has a "Name" variable which is used to display it in the menu
 ############################################
+
+
+
+class Word_Game:
+    Name = "WORDS"
+    def __init__(self):
+        global MacroPadTextLines, KeyColor, KeyState, Display,SpriteFlag,SpriteGroup
+
+        KeyColor = [5,1,6]*4 #color the keys into columns
+        KeyState = [True for i in range(12)]
+        MacroPadTextLines = MacroPad.display_text(title="") #set the textscale for the game
+        Display = ""
+        MacroPadUpdate()
+
+        #randomly deal out 3 emojis
+        possible_emoji_list = list(range(N_Emojis)) #list of possible emojis to choose from
+        for i in range(3):
+            Sprite[i] = random.choice(possible_emoji_list)
+            possible_emoji_list.remove(Sprite[i])
+
+        self.emoji_answer_ix = random.choice([0,1,2]) #choose which one is correct randomly!
+        SpriteText.text = EMOJI_WORDS[ Sprite[self.emoji_answer_ix] % len(EMOJI_WORDS) ]
+
+        #Sprite[0] = 0 #set the indices according to the spritesheet
+        #Sprite[1] = 1
+        #Sprite[2] = 2
+
+        SpriteFlag = True #whether or not to show the sprite
+
+
+
+
+
+        #BoardDisplay.show(SpriteGroup) #display everything on screen!
+
+
+        #time.sleep(5)
+
+    def encoder_turned(self,EncoderState,EncoderDiff):
+        #for i in range(3):
+        #    Sprite[i] = (EncoderState+i) % len(EMOJI_WORDS)
+        #SpriteText.text = EMOJI_WORDS[ Sprite[0] % len(EMOJI_WORDS) ]
+        pass
+
+
+    def key_pressed(self,KeyPressedIx):
+        global MacroPadTextLines, KeyColor, KeyState, Display,SpriteFlag,SpriteGroup
+
+        if KeyPressedIx % 3 == self.emoji_answer_ix :
+            for i in range(4):
+                KeyColor[3*i+self.emoji_answer_ix ] = 2 #set column of keys to Green
+            MacroPadUpdate()
+            for i in range(3):
+                Sprite[i] = Sprite[self.emoji_answer_ix]
+            BoardDisplay.show(SpriteGroup)
+            MacroPadHappy(4,False)
+            self.__init__()
+        else:
+            for i in range(4):
+                KeyColor[3*i+KeyPressedIx] = 0 #set column of keys to Red
+            MacroPadUpdate()
+            BoardDisplay.show(SpriteGroup)
+            MacroPadSad()
+            KeyColor = [5,6,8]*4 #color the keys into columns #reset colors
+            MacroPadUpdate()
+
 
 class Settings_Game:
     #This game allows you to change the pixel brightness and set volume on
@@ -342,6 +455,8 @@ class Memory_Game:
         self.play_mem_seq()
 
 
+
+
 class Off_Game:
     # "Turns off" the macropad by putting it into an infinite loop
     Name = "OFF"
@@ -383,23 +498,24 @@ def MacroPadTone(freq_hz,time_s):
         time.sleep(time_s)
 
 #Play a happy tone and show a picture of a turtle
-def MacroPadHappy(n_tones = 4):
-    MacroPad.display_image("happy_turtle.bmp")
+def MacroPadHappy(n_tones = 4,show_image=True):
+    if show_image:
+        MacroPad.display_image("happy_turtle.bmp")
     for i in range(n_tones):
         MacroPadTone(300 + 150 * i, 0.25)
 
 #Play a happy tone and show a picture of a turtle
-def MacroPadSad(n_tones = 4):
+def MacroPadSad(n_tones = 3):
     #MacroPad.display_image("happy_turtle.bmp")
     for i in range(n_tones):
-        MacroPadTone(400 - 150 * i, 0.25)
+        MacroPadTone(450 - 150 * i, 0.25)
 
 #################
 ## Main loop code
 #################
 
 #List of all the games, this is how the menu works
-AllGames = [Count_Game, Memory_Game, Settings_Game, Math_Game, Art_Game, Find_Colors_Game, Off_Game]
+AllGames = [Word_Game, Count_Game, Memory_Game, Settings_Game, Math_Game, Art_Game, Find_Colors_Game, Off_Game]
 MenuChoiceIx = 0
 
 #Encoder positions stored so we can compare to them
@@ -416,11 +532,17 @@ MacroPad.red_led = True
 #Main loop
 while True:
     #### GAME MODE ####
+    print("hi")
     Game = AllGames[MenuChoiceIx]() #initialize the game!
     FirstEncoder = MacroPad.encoder #position of encoder now (for comparison later)
     MacroPadUpdate()
     while True:
         #check and see if we pressed encoder button -> if so go to Menu code
+
+        if SpriteFlag==True:
+            BoardDisplay.show(SpriteGroup)
+            #BoardDisplay.refresh()
+
         MacroPad.encoder_switch_debounced.update()
         if MacroPad.encoder_switch_debounced.pressed: #loop until encoder pressed (then go to Menu Mode):
             break
@@ -450,6 +572,10 @@ while True:
 
 
     #### MENU MODE #####
+
+    #reset away from image based games
+    SpriteFlag = False #turn off displaying the sprite
+
     MacroPadTextLines = MacroPad.display_text(title="Menu:",title_scale=2,text_scale=3,title_length=8)
     Display = AllGames[MenuChoiceIx].Name
     KeyState = [False]*12
