@@ -10,6 +10,7 @@ import adafruit_imageload
 
 import terminalio
 from adafruit_display_text import label
+#from adafruit_bitmap_font import bitmap_font
 
 BoardDisplay = board.DISPLAY
 SpriteGroup = displayio.Group()
@@ -27,7 +28,6 @@ EMOJI_WORDS = ["EGG","HOUSE","ROAD","MOON","HELICOPTER","TENT","GONDOLA","MILK",
                 "PLANE","DUCK","CHEESE","PIG","CAT","OCTOPUS","BANANAS","ROBOT","TURTLE","CAR","BEAVER","TRAIN","SUN","TRACTOR",
                 "SNAIL","HAT","BIKE","POLICE","FISH","COW","FROG","CRAB","OWL"]
 N_Emojis = len(EMOJI_WORDS)
-print(N_Emojis)
 
 # Create the sprite TileGrid
 # this is an array of size 3 with the 3 symbols to show
@@ -45,7 +45,9 @@ SpriteGroup.append(Sprite)
 
 
 max_word_len = max([len(word) for word in EMOJI_WORDS])
-SpriteText = label.Label(terminalio.FONT, text='-'*max_word_len, color=0xFFFFFF,scale=2) #add in the text S
+font = terminalio.FONT
+#font = bitmap_font.load_font("Helvetica-Bold-16.bdf")
+SpriteText = label.Label(font, text='-'*max_word_len, color=0xFFFFFF,scale=2) #add in the text S
 SpriteText.anchor_point = (0.5, 0.0) #set the anchor to the top-middle of the text so it can be centered
 SpriteText.anchored_position = (64, -6) #place the text in the top-middle of the screen
 SpriteGroup.append(SpriteText) #add it to the displaygroup
@@ -147,6 +149,7 @@ class Word_Game:
         #time.sleep(5)
 
     def encoder_turned(self,EncoderState,EncoderDiff):
+        #scroll through all the words that are there!
         #for i in range(3):
         #    Sprite[i] = (EncoderState+i) % len(EMOJI_WORDS)
         #SpriteText.text = EMOJI_WORDS[ Sprite[0] % len(EMOJI_WORDS) ]
@@ -532,7 +535,6 @@ MacroPad.red_led = True
 #Main loop
 while True:
     #### GAME MODE ####
-    print("hi")
     Game = AllGames[MenuChoiceIx]() #initialize the game!
     FirstEncoder = MacroPad.encoder #position of encoder now (for comparison later)
     MacroPadUpdate()
