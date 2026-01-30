@@ -837,8 +837,8 @@ for x,y,rot in zip(x_positions,y_positions,rotations):
     
     # Move to Y-Max plus the gap
     fin_front.translate(App.Vector(x - x_offset, bbox.YMax + gap+y, 0))
-    Part.show(fin_front, "SupportFin_Front")
-    all_parts.append(fin_front)
+    #Part.show(fin_front, "SupportFin_Front")
+    #all_parts.append(fin_front)
 
 #print("Fins placed successfully.")
 
